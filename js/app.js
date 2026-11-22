@@ -37,20 +37,34 @@ function freshPct(i) {
   return clamp(Math.round((itemDays(i) / span) * 100), 0, 100);
 }
 
-function itemCard(i) {
+// Cada producto es un objeto en la repisa: frasco, lata, huacal, bolsa de pan,
+// paquete de carnicería o botella. La tapa / etiqueta indica qué tan fresco está.
+const VESSELS = { frutas: 'crate', verduras: 'crate', panaderia: 'bag', despensa: 'can', bebidas: 'bottle', carnes: 'wrap', pescados: 'wrap' };
+
+function vessel(i) {
   const d = itemDays(i);
   const st = status(d);
-  const pct = Math.max(st === 'vencido' ? 100 : 6, freshPct(i));
-  return `<li><button type="button" class="item is-${st}" data-item="${i.id}">
-    <span class="item__emoji" aria-hidden="true">${i.emoji}</span>
-    <span class="item__body">
-      <span class="item__name">${esc(i.name)}</span>
-      <span class="item__meta">${esc(fmtQty(i))} · ${LOCATIONS[i.loc]?.label || ''}</span>
-      <span class="fresh" aria-hidden="true"><span style="width:${pct}%"></span></span>
+  const approx = i.expiryType === 'aprox';
+  const fill = Math.max(st === 'vencido' ? 100 : 10, freshPct(i));
+  return `<button type="button" class="vessel vessel--${VESSELS[i.cat] || 'jar'} is-${st}" data-item="${i.id}"
+      aria-label="${esc(i.name)}, ${esc(fmtQty(i))}, ${esc(relExpiry(d, approx))}">
+    <span class="vessel__lid" aria-hidden="true"></span>
+    <span class="vessel__body" aria-hidden="true">
+      <span class="vessel__fill" style="height:${fill}%"></span>
+      <span class="vessel__qty">${esc(fmtQty(i))}</span>
+      <span class="vessel__emoji">${i.emoji}</span>
+      <span class="vessel__tag"><b>${esc(i.name)}</b><small>${shortExpiry(d, approx)}</small></span>
     </span>
-    <span class="chip">${shortExpiry(d, i.expiryType === 'aprox')}</span>
-  </button></li>`;
+  </button>`;
 }
+
+function shelves(list, per = 3) {
+  let html = '';
+  for (let k = 0; k < list.length; k += per) html += `<div class="shelf">${list.slice(k, k + per).map(vessel).join('')}</div>`;
+  return `<div class="shelves">${html}</div>`;
+}
+
+const tape = (cls = '') => `<span class="tape ${cls}" aria-hidden="true"></span>`;
 
 function emptyState(art, title, text, extra = '') {
   return `<div class="empty"><div class="empty__art" aria-hidden="true">${art}</div><h3>${title}</h3><p>${text}</p>${extra}</div>`;
@@ -172,23 +186,27 @@ function viewHome() {
     .map(([k, l]) => {
       const list = items.filter((i) => i.loc === k);
       const urgent = list.filter((i) => itemDays(i) <= 3).length;
-      return `<a class="place place--${k}" href="#/inventario?loc=${k}">
-        ${urgent ? `<span class="place__dot" aria-label="${urgent} por vencer">${urgent}</span>` : ''}
-        <span class="place__emoji" aria-hidden="true">${l.emoji}</span>
-        <span class="place__count">${list.length}</span>
-        <span class="place__label">${l.label}</span>
+      return `<a class="furni furni--${k}" href="#/inventario?loc=${k}"
+          aria-label="${l.long}: ${list.length} ${list.length === 1 ? 'producto' : 'productos'}${urgent ? `, ${urgent} por vencer` : ''}">
+        <span class="furni__box" aria-hidden="true">
+          <span class="furni__door"></span><span class="furni__door"></span>
+          <span class="furni__magnet">${list.length}</span>
+          ${urgent ? `<span class="furni__alert">⏰ ${urgent}</span>` : ''}
+        </span>
+        <span class="furni__label">${l.label}</span>
       </a>`;
     })
     .join('');
 
-  const quick = `<section class="quick">
-    <a class="quick__btn quick__btn--scan" href="#/escanear">${ico('camera')}<span><b>Escanear ticket</b><small>Agrega tu compra con una foto</small></span></a>
-    <a class="quick__btn" href="#/compra/nueva">${ico('pencil')}<span><b>Agregar a mano</b><small>Anota lo que compraste</small></span></a>
+  const quick = `<section class="notes">
+    <a class="note note--ticket" href="#/escanear">${tape()}<span class="note__icon" aria-hidden="true">🧾</span><b>Escanear ticket</b><small>Tómale foto y lo leemos por ti</small></a>
+    <a class="note note--lined" href="#/compra/nueva">${tape('tape--sage')}<span class="note__icon" aria-hidden="true">✍️</span><b>Agregar a mano</b><small>Anota lo que trajiste</small></a>
   </section>`;
 
   let body;
   if (!items.length) {
-    body = `<section class="welcome">
+    body = `<div class="shelves" aria-hidden="true" style="margin-top:34px"><div class="shelf shelf--ghost"><span class="ghost"></span><span class="ghost"></span><span class="ghost"></span></div></div>
+    <section class="welcome">
       <div class="welcome__art" aria-hidden="true">🥕🥛🍞</div>
       <h2>Empecemos a llenar tu cocina</h2>
       <p>Guarda tu última compra y te avisamos qué conviene usar primero, para que nada se eche a perder.</p>
@@ -199,7 +217,7 @@ function viewHome() {
     body = `<section class="section">
       <div class="section__head"><h2>Úsalo pronto</h2>${soon.length ? '<a href="#/inventario" class="link">Ver todo</a>' : ''}</div>
       ${soon.length
-        ? `<ul class="list">${soon.slice(0, 6).map(itemCard).join('')}</ul>`
+        ? shelves(soon.slice(0, 6))
         : emptyState('🌿', 'Nada urgente', 'No hay nada por vencer en los próximos días. ¡Bien hecho!')}
     </section>${quick}`;
   }
@@ -274,7 +292,7 @@ function viewInventory(_, params) {
       return;
     }
     if (sort !== 'vence') {
-      listEl.innerHTML = `<ul class="list">${list.map(itemCard).join('')}</ul>`;
+      listEl.innerHTML = shelves(list);
       return;
     }
     const groups = [
@@ -283,7 +301,7 @@ function viewInventory(_, params) {
       ['Esta semana', list.filter((i) => itemDays(i) > 3 && itemDays(i) <= 7)],
       ['Con calma', list.filter((i) => itemDays(i) > 7)],
     ].filter(([, g]) => g.length);
-    listEl.innerHTML = groups.map(([t, g]) => `<h3 class="group-label">${t}</h3><ul class="list">${g.map(itemCard).join('')}</ul>`).join('');
+    listEl.innerHTML = groups.map(([t, g]) => `<h3 class="group-label">${t}</h3>${shelves(g)}`).join('');
   };
   paint();
 
@@ -725,10 +743,13 @@ function viewScan() {
   const showIntro = () => {
     body.innerHTML = `
       <section class="scan-hero">
+        <span class="pin" aria-hidden="true"></span>
         <div class="ticket-art" aria-hidden="true"><b>🧾</b><i></i><i></i><i></i><i></i><i></i></div>
         <span class="scan-line" aria-hidden="true"></span>
-        <h2>Tómale foto a tu ticket</h2>
-        <p>Después podrás revisar y corregir cada producto antes de guardarlo.</p>
+        <div class="cork-note">
+          <h2>Tómale foto a tu ticket</h2>
+          <p>Después podrás revisar y corregir cada producto antes de guardarlo.</p>
+        </div>
       </section>
       <div class="scan-actions">
         <label class="btn btn--primary btn--block">${ico('camera')} Tomar foto<input class="file-input" type="file" accept="image/*" capture="environment" data-file></label>
