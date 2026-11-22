@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Alacena</title>
+    <meta name="description" content="Tu cocina, siempre a la mano: guarda tus compras, escanea tus tickets y sabe qué hay en tu refri y cuándo vence." />
+    <meta name="theme-color" content="#fbf5ec" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1c1612" media="(prefers-color-scheme: dark)" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Alacena" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="icons/icon-180.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <main id="view" class="view" tabindex="-1"></main>
+    </div>
+
+    <nav class="tabbar" aria-label="Navegación principal">
+      <div class="tabbar__inner">
+        <a class="tab" href="#/" data-path="/">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 10.5 12 3.5l8.5 7V19a1.5 1.5 0 0 1-1.5 1.5h-4v-6h-6v6H5A1.5 1.5 0 0 1 3.5 19z" /></svg>
+          <span>Inicio</span>
+        </a>
+        <a class="tab" href="#/inventario" data-path="/inventario">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="5.5" y="2.5" width="13" height="19" rx="3" /><path d="M5.5 9.5h13M9 5.5v2M9 12.5v3" /></svg>
+          <span>Mi cocina</span>
+        </a>
+        <button class="fab" type="button" id="fab" aria-label="Agregar compra">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+        </button>
+        <a class="tab" href="#/compras" data-path="/compras">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2.5h12v19l-2-1.4-2 1.4-2-1.4-2 1.4-2-1.4-2 1.4z" /><path d="M9 7.5h6M9 11h6M9 14.5h3.5" /></svg>
+          <span>Compras</span>
+        </a>
+        <a class="tab" href="#/ajustes" data-path="/ajustes">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h9M17 6.5h3M4 12h3M11 12h9M4 17.5h11M19 17.5h1" /><circle cx="15" cy="6.5" r="2" /><circle cx="9" cy="12" r="2" /><circle cx="17" cy="17.5" r="2" /></svg>
+          <span>Ajustes</span>
+        </a>
+      </div>
+    </nav>
+
+    <div id="sheet-root"></div>
+    <div id="toast-root" aria-live="polite"></div>
+
+    <noscript><p style="padding:24px;font-family:sans-serif">Alacena necesita JavaScript para funcionar.</p></noscript>
+    <script type="module" src="js/app.js"></script>
+  </body>
+</html>
