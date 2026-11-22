@@ -1,7 +1,7 @@
 // Service worker: la app funciona sin conexión.
 // Archivos propios: primero la red (siempre lo más nuevo), si no hay red se usa la copia guardada.
 // Fuentes y el lector de tickets (otros dominios): primero la copia guardada.
-const VERSION = 'alacena-v2';
+const VERSION = 'alacena-v3';
 const SHELL = [
   './',
   'index.html',
@@ -11,6 +11,7 @@ const SHELL = [
   'js/foods.js',
   'js/utils.js',
   'js/ticket.js',
+  'js/icons.js',
   'manifest.webmanifest',
   'icons/icon.svg',
   'icons/icon-192.png',

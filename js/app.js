@@ -1,5 +1,6 @@
 import { store, STORE_KEY } from './store.js';
-import { CATEGORIES, LOCATIONS, UNITS, COUNTABLE, guessFood, estimateDays, unitLabel, isNonFood, normalize } from './foods.js';
+import { CATEGORIES, LOCATIONS, UNITS, COUNTABLE, guessFood, estimateDays, unitLabel, isNonFood, normalize, iconFor } from './foods.js';
+import { art } from './icons.js';
 import {
   uid, esc, todayISO, addDays, diffDays, daysUntil, fmtDate, monthKey, monthLabel, humanDays,
   relExpiry, shortExpiry, relPast, status, fmtMoney, fmtNum, clamp,
@@ -24,6 +25,17 @@ const P = {
   sparkle: '<path d="M12 3.5 13.8 10 20.5 12l-6.7 2L12 20.5 10.2 14 3.5 12l6.7-2z"/>',
   download: '<path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/>',
   upload: '<path d="M12 20V9M7 13.5l5-5 5 5M5 4h14"/>',
+  fridge: '<rect x="5.5" y="2.5" width="13" height="19" rx="3"/><path d="M5.5 9.5h13M9 5.5v2M9 12.5v3"/>',
+  snow: '<path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9M9.5 4.5 12 7l2.5-2.5M9.5 19.5 12 17l2.5 2.5"/>',
+  cabinet: '<rect x="4" y="3.5" width="16" height="17" rx="2"/><path d="M12 3.5v17M9.5 11v2M14.5 11v2M6.5 20.5V22M17.5 20.5V22"/>',
+  all: '<rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/>',
+  moon: '<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>',
+  auto: '<circle cx="12" cy="12" r="8.5"/><path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor"/>',
+  calendar: '<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+  clock: '<circle cx="12" cy="13" r="7.5"/><path d="M12 9.5V13l2.5 2M5 4.5 3 6.5M19 4.5l2 2"/>',
+  bulb: '<path d="M9 17.5h6M10 21h4M8.5 14.5a6 6 0 1 1 7 0c-.8.7-1.2 1.6-1.2 2.5h-4.6c0-.9-.4-1.8-1.2-2.5z"/>',
+  ruler: '<rect x="3" y="8" width="18" height="8" rx="1.5"/><path d="M7 8v3M11 8v4M15 8v3M19 8v4"/>',
 };
 const ico = (n) => `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true">${P[n]}</svg>`;
 
@@ -52,7 +64,7 @@ function vessel(i) {
     <span class="vessel__body" aria-hidden="true">
       <span class="vessel__fill" style="height:${fill}%"></span>
       <span class="vessel__qty">${esc(fmtQty(i))}</span>
-      <span class="vessel__emoji">${i.emoji}</span>
+      <span class="vessel__emoji">${art(iconFor(i))}</span>
       <span class="vessel__tag"><b>${esc(i.name)}</b><small>${shortExpiry(d, approx)}</small></span>
     </span>
   </button>`;
@@ -66,8 +78,8 @@ function shelves(list, per = 3) {
 
 const tape = (cls = '') => `<span class="tape ${cls}" aria-hidden="true"></span>`;
 
-function emptyState(art, title, text, extra = '') {
-  return `<div class="empty"><div class="empty__art" aria-hidden="true">${art}</div><h3>${title}</h3><p>${text}</p>${extra}</div>`;
+function emptyState(icon, title, text, extra = '') {
+  return `<div class="empty"><div class="empty__art">${art(icon)}</div><h3>${title}</h3><p>${text}</p>${extra}</div>`;
 }
 
 // ---------- Hoja inferior y avisos ----------
@@ -166,7 +178,7 @@ function viewHome() {
   const items = store.items;
   const h = new Date().getHours();
   const greet = h < 5 ? 'Buenas noches' : h < 12 ? 'Buenos días' : h < 19 ? 'Buenas tardes' : 'Buenas noches';
-  const icon = h < 5 || h >= 20 ? '🌙' : h < 12 ? '☀️' : h < 19 ? '🌤️' : '🌇';
+  const icon = ico(h < 7 || h >= 19 ? 'moon' : 'sun');
   const soon = sortByExpiry(items.filter((i) => itemDays(i) <= 3));
   const expiredCount = items.filter((i) => itemDays(i) < 0).length;
 
@@ -191,7 +203,7 @@ function viewHome() {
         <span class="furni__box" aria-hidden="true">
           <span class="furni__door"></span><span class="furni__door"></span>
           <span class="furni__magnet">${list.length}</span>
-          ${urgent ? `<span class="furni__alert">⏰ ${urgent}</span>` : ''}
+          ${urgent ? `<span class="furni__alert">${ico('clock')} ${urgent}</span>` : ''}
         </span>
         <span class="furni__label">${l.label}</span>
       </a>`;
@@ -199,15 +211,15 @@ function viewHome() {
     .join('');
 
   const quick = `<section class="notes">
-    <a class="note note--ticket" href="#/escanear">${tape()}<span class="note__icon" aria-hidden="true">🧾</span><b>Escanear ticket</b><small>Tómale foto y lo leemos por ti</small></a>
-    <a class="note note--lined" href="#/compra/nueva">${tape('tape--sage')}<span class="note__icon" aria-hidden="true">✍️</span><b>Agregar a mano</b><small>Anota lo que trajiste</small></a>
+    <a class="note note--ticket" href="#/escanear">${tape()}<span class="note__icon">${art('ticket')}</span><b>Escanear ticket</b><small>Tómale foto y lo leemos por ti</small></a>
+    <a class="note note--lined" href="#/compra/nueva">${tape('tape--sage')}<span class="note__icon">${art('notepad')}</span><b>Agregar a mano</b><small>Anota lo que trajiste</small></a>
   </section>`;
 
   let body;
   if (!items.length) {
     body = `<div class="shelves" aria-hidden="true" style="margin-top:34px"><div class="shelf shelf--ghost"><span class="ghost"></span><span class="ghost"></span><span class="ghost"></span></div></div>
     <section class="welcome">
-      <div class="welcome__art" aria-hidden="true">🥕🥛🍞</div>
+      <div class="welcome__art">${art('carrot')}${art('milk')}${art('bread')}</div>
       <h2>Empecemos a llenar tu cocina</h2>
       <p>Guarda tu última compra y te avisamos qué conviene usar primero, para que nada se eche a perder.</p>
       <a class="btn btn--primary btn--block" href="#/escanear">${ico('camera')} Escanear mi ticket</a>
@@ -218,14 +230,14 @@ function viewHome() {
       <div class="section__head"><h2>Úsalo pronto</h2>${soon.length ? '<a href="#/inventario" class="link">Ver todo</a>' : ''}</div>
       ${soon.length
         ? shelves(soon.slice(0, 6))
-        : emptyState('🌿', 'Nada urgente', 'No hay nada por vencer en los próximos días. ¡Bien hecho!')}
+        : emptyState('sprout', 'Nada urgente', 'No hay nada por vencer en los próximos días. ¡Bien hecho!')}
     </section>${quick}`;
   }
 
   const stats = used || wasted
     ? `<section class="stats" aria-label="Este mes">
-        <div class="stat stat--sage"><small>Este mes aprovechaste</small><b>${used}</b><small>${used === 1 ? 'producto' : 'productos'} 🌱</small></div>
-        <div class="stat stat--rose"><small>Se echaron a perder</small><b>${wasted}</b><small>${wasted === 0 ? '¡ninguno! 💛' : wasted === 1 ? 'producto' : 'productos'}</small></div>
+        <div class="stat stat--sage"><small>Este mes aprovechaste</small><b>${used}</b><small>${used === 1 ? 'producto' : 'productos'}</small></div>
+        <div class="stat stat--rose"><small>Se echaron a perder</small><b>${wasted}</b><small>${wasted === 0 ? '¡ninguno!' : wasted === 1 ? 'producto' : 'productos'}</small></div>
       </section>`
     : '';
 
@@ -235,7 +247,7 @@ function viewHome() {
       <h1>${title}</h1>
     </header>
     <section class="places" aria-label="Lugares">${places}</section>
-    ${draft && draft.rows.some((r) => r.name.trim()) ? `<a class="banner" href="#/compra/nueva"><span class="banner__emoji">🧺</span><span>Tienes una compra sin guardar</span>${ico('chevron')}</a>` : ''}
+    ${draft && draft.rows.some((r) => r.name.trim()) ? `<a class="banner" href="#/compra/nueva"><span class="banner__emoji">${art('basket')}</span><span>Tienes una compra sin guardar</span>${ico('chevron')}</a>` : ''}
     ${body}
     ${stats}`;
 }
@@ -249,8 +261,8 @@ function viewInventory(_, params) {
   const count = (k) => (k === 'todo' ? items.length : items.filter((i) => i.loc === k).length);
   const link = (l, s = sort) => `#/inventario?loc=${l}&sort=${s}`;
 
-  const pills = [['todo', { label: 'Todo', emoji: '✨' }], ...Object.entries(LOCATIONS)]
-    .map(([k, l]) => `<a class="pill ${loc === k ? 'on' : ''}" href="${link(k)}" ${loc === k ? 'aria-current="true"' : ''}>${l.emoji} ${l.label} <b>${count(k)}</b></a>`)
+  const pills = [['todo', { label: 'Todo', icon: 'all' }], ...Object.entries(LOCATIONS)]
+    .map(([k, l]) => `<a class="pill ${loc === k ? 'on' : ''}" href="${link(k)}" ${loc === k ? 'aria-current="true"' : ''}>${ico(l.icon)} ${l.label} <b>${count(k)}</b></a>`)
     .join('');
 
   view.innerHTML = `
@@ -270,7 +282,7 @@ function viewInventory(_, params) {
         </select></label>
       </div>
       <div id="inv-list"></div>`
-      : emptyState('🧺', 'Tu cocina está vacía', 'Agrega tu primera compra y aquí aparecerá todo, ordenado por lo que vence primero.',
+      : emptyState('basket', 'Tu cocina está vacía', 'Agrega tu primera compra y aquí aparecerá todo, ordenado por lo que vence primero.',
         `<div class="stack"><a class="btn btn--primary btn--block" href="#/escanear">${ico('camera')} Escanear ticket</a><a class="btn btn--ghost btn--block" href="#/compra/nueva">${ico('pencil')} Agregar a mano</a></div>`)}
   `;
   if (!items.length) return;
@@ -287,8 +299,8 @@ function viewInventory(_, params) {
 
     if (!list.length) {
       listEl.innerHTML = q
-        ? emptyState('🔎', 'No lo encontramos', `No hay nada que se llame “${esc(invQuery)}”. ¿Quizá ya se terminó?`)
-        : emptyState(LOCATIONS[loc]?.emoji || '🧺', `Nada ${LOCATIONS[loc]?.en || 'por aquí'}`, 'Cuando guardes algo aquí, lo verás en esta lista.');
+        ? emptyState('magnifier', 'No lo encontramos', `No hay nada que se llame “${esc(invQuery)}”. ¿Quizá ya se terminó?`)
+        : emptyState('jar', `Nada ${LOCATIONS[loc]?.en || 'por aquí'}`, 'Cuando guardes algo aquí, lo verás en esta lista.');
       return;
     }
     if (sort !== 'vence') {
@@ -324,8 +336,8 @@ function openItemSheet(id) {
 
   openSheet(`
     <div class="sheet__head">
-      <span class="big-emoji" aria-hidden="true">${i.emoji}</span>
-      <div><h2>${esc(i.name)}</h2><p class="sub">${esc(fmtQty(i))} · ${LOCATIONS[i.loc].emoji} ${LOCATIONS[i.loc].long}</p></div>
+      <span class="big-emoji">${art(iconFor(i))}</span>
+      <div><h2>${esc(i.name)}</h2><p class="sub">${esc(fmtQty(i))} · ${LOCATIONS[i.loc].long}</p></div>
     </div>
     <div class="expiry-box is-${st}">
       <b>${relExpiry(d, approx)}</b>
@@ -339,7 +351,7 @@ function openItemSheet(id) {
       <button type="button" class="btn btn--rose" data-act="waste">Se echó a perder</button>
     </div>
     <p class="label" style="margin-top:4px">Mover a</p>
-    <div class="grid2">${others.map((k) => `<button type="button" class="btn btn--ghost" data-move="${k}">${LOCATIONS[k].emoji} ${LOCATIONS[k].label}</button>`).join('')}</div>
+    <div class="grid2">${others.map((k) => `<button type="button" class="btn btn--ghost" data-move="${k}">${ico(LOCATIONS[k].icon)} ${LOCATIONS[k].label}</button>`).join('')}</div>
     <a class="btn btn--text btn--block" href="#/item/${i.id}">${ico('pencil')} Editar detalles</a>
   `, (sheet) => {
     sheet.addEventListener('click', (e) => {
@@ -352,10 +364,10 @@ function openItemSheet(id) {
       } else if (act === 'done' || act === 'waste') {
         const res = store.removeItem(i.id, act === 'done' ? 'consumido' : 'tirado');
         render();
-        toast(act === 'done' ? `¡Bien aprovechado! ${i.emoji}` : 'Anotado. La próxima será 💛', { label: 'Deshacer', fn: () => { store.restore(res); render(); } });
+        toast(act === 'done' ? '¡Bien aprovechado!' : 'Anotado. La próxima será mejor', { label: 'Deshacer', fn: () => { store.restore(res); render(); } });
       } else if (move) {
         const patch = { loc: move };
-        let msg = `${i.emoji} Movido ${LOCATIONS[move].en}`;
+        let msg = `${i.name} movido ${LOCATIONS[move].en}`;
         if (approx || move === 'congelador' || i.loc === 'congelador') {
           const days = estimateDays(i.name, i.cat, move);
           patch.expiresAt = addDays(todayISO(), days);
@@ -375,7 +387,7 @@ function openItemSheet(id) {
 function newRow(name = '', extra = {}) {
   const r = {
     id: uid(), name, qty: 1, unit: 'pz', price: null,
-    loc: 'refri', cat: 'otros', emoji: CATEGORIES.otros.emoji,
+    loc: 'refri', cat: 'otros', icon: CATEGORIES.otros.icon,
     mode: 'aprox', days: 7, date: '', open: false, pantry: true,
     touched: { cat: false, loc: false, days: false, pantry: extra.pantry !== undefined },
     ...extra,
@@ -393,7 +405,7 @@ function applyGuess(r) {
   } else if (!r.touched.loc && !r.touched.cat && r.name.trim().length > 2) {
     r.loc = 'alacena';
   }
-  r.emoji = g?.emoji || CATEGORIES[r.cat]?.emoji || '🛒';
+  r.icon = g?.icon || CATEGORIES[r.cat]?.icon || 'basket';
   if (!r.touched.days) r.days = estimateDays(r.name, r.cat, r.loc);
 }
 
@@ -405,7 +417,7 @@ function rowExpiryShort(r, base) {
 
 function rowSummaryHTML(r, base) {
   return `<button type="button" class="row__sum" data-toggle aria-expanded="${r.open}">
-    <span class="item__emoji" aria-hidden="true">${r.emoji}</span>
+    <span class="item__emoji">${art(r.icon)}</span>
     <span class="item__body">
       <span class="item__name">${r.name.trim() ? esc(r.name) : '<span class="muted">Producto nuevo</span>'}</span>
       <span class="item__meta">${esc(fmtQty(r))}${r.pantry ? ` · ${LOCATIONS[r.loc].label}` : ''} · ${rowExpiryShort(r, base)}</span>
@@ -419,15 +431,15 @@ function rowExpiryHTML(r, base) {
   if (r.mode === 'fecha') {
     const n = r.date ? diffDays(todayISO(), r.date) : null;
     return `<input type="date" data-f="date" value="${r.date || ''}" aria-label="Fecha de caducidad">
-      <p class="hint hint--result">${n == null ? 'Busca la fecha en el empaque 🔎' : `${status(n) === 'fresco' ? '🟢' : status(n) === 'pronto' ? '🟡' : '🔴'} ${relExpiry(n, false)}`}</p>`;
+      <p class="hint hint--result">${n == null ? 'Busca la fecha en el empaque' : `<span class="dot dot--${status(n)}"></span>${relExpiry(n, false)}`}</p>`;
   }
   const sug = estimateDays(r.name, r.cat, r.loc);
   const opts = [...new Set([sug, 3, 7, 14, 30, 90])].sort((a, b) => a - b);
   return `<p class="hint">Suele durar <b>~${humanDays(sug)}</b> ${LOCATIONS[r.loc].en}.</p>
     <div class="chips" role="group" aria-label="Duración aproximada">${opts
-      .map((n) => `<button type="button" data-days="${n}" class="${r.days === n ? 'on' : ''}">${n === sug ? '✨ ' : ''}${humanDays(n)}</button>`)
+      .map((n) => `<button type="button" data-days="${n}" class="${r.days === n ? 'on' : ''}">${n === sug ? ico('sparkle') : ''}${humanDays(n)}</button>`)
       .join('')}${!opts.includes(r.days) ? `<button type="button" class="on" data-days="${r.days}">${humanDays(r.days)}</button>` : ''}</div>
-    <p class="hint hint--result">📅 Vencería aprox. el ${fmtDate(addDays(base, r.days), { weekday: true })}</p>`;
+    <p class="hint hint--result">${ico('calendar')} Vencería aprox. el ${fmtDate(addDays(base, r.days), { weekday: true })}</p>`;
 }
 
 function rowBodyHTML(r, base, opts) {
@@ -445,13 +457,13 @@ function rowBodyHTML(r, base, opts) {
     ${opts.pantryToggle ? `<label class="switch"><input type="checkbox" data-f="pantry" ${r.pantry ? 'checked' : ''}><span>Guardar en mi cocina<small>Apágalo para cosas que no son comida (jabón, papel…)</small></span></label>` : ''}
     <div data-pantry ${r.pantry ? '' : 'hidden'} style="display:grid;gap:14px">
       <div class="field"><span>¿Dónde lo guardas?</span>
-        <div class="seg" role="group">${Object.entries(LOCATIONS).map(([k, l]) => `<button type="button" data-loc="${k}" class="${r.loc === k ? 'on' : ''}" aria-pressed="${r.loc === k}"><span class="e">${l.emoji}</span>${l.label}</button>`).join('')}</div></div>
+        <div class="seg" role="group">${Object.entries(LOCATIONS).map(([k, l]) => `<button type="button" data-loc="${k}" class="${r.loc === k ? 'on' : ''}" aria-pressed="${r.loc === k}"><span class="e">${ico(l.icon)}</span>${l.label}</button>`).join('')}</div></div>
       <label class="field"><span>Categoría</span>
-        <select data-f="cat">${Object.entries(CATEGORIES).map(([k, c]) => `<option value="${k}" ${r.cat === k ? 'selected' : ''}>${c.emoji} ${c.label}</option>`).join('')}</select></label>
+        <select data-f="cat">${Object.entries(CATEGORIES).map(([k, c]) => `<option value="${k}" ${r.cat === k ? 'selected' : ''}>${c.label}</option>`).join('')}</select></label>
       <div class="field"><span>¿Cuándo vence?</span>
         <div class="seg seg--row" role="group">
           <button type="button" data-mode="aprox" class="${r.mode === 'aprox' ? 'on' : ''}">${ico('sparkle')} Calcúlalo</button>
-          <button type="button" data-mode="fecha" class="${r.mode === 'fecha' ? 'on' : ''}">📅 Tengo la fecha</button>
+          <button type="button" data-mode="fecha" class="${r.mode === 'fecha' ? 'on' : ''}">${ico('calendar')} Tengo la fecha</button>
         </div>
         <div data-expiry style="display:grid;gap:10px;margin-top:6px">${rowExpiryHTML(r, base)}</div>
       </div>
@@ -698,7 +710,7 @@ function viewDraft() {
   view.querySelector('#save').addEventListener('click', () => {
     const rows = draft.rows.filter((r) => r.name.trim());
     if (!rows.length) {
-      toast('Escribe al menos un producto 🙂');
+      toast('Escribe al menos un producto');
       rowsEl.querySelector('[data-f="name"]')?.focus();
       return;
     }
@@ -713,19 +725,19 @@ function viewDraft() {
       store: draft.store.trim(),
       source: draft.source,
       total: Math.round((sum || draft.total || 0) * 100) / 100,
-      items: rows.map((r) => ({ name: r.name.trim(), emoji: r.emoji, qty: r.qty, unit: r.unit, price: r.price, pantry: r.pantry })),
+      items: rows.map((r) => ({ name: r.name.trim(), icon: r.icon, qty: r.qty, unit: r.unit, price: r.price, pantry: r.pantry })),
     });
     const newItems = rows
       .filter((r) => r.pantry)
       .map((r) => ({
-        id: uid(), name: r.name.trim(), emoji: r.emoji, cat: r.cat, loc: r.loc,
+        id: uid(), name: r.name.trim(), icon: r.icon, cat: r.cat, loc: r.loc,
         qty: r.qty || 1, unit: r.unit, price: r.price, addedAt: b, purchaseId,
         ...rowExpiresAt(r, b),
       }));
     store.addItems(newItems);
     setDraft(null);
     go('#/inventario');
-    toast(newItems.length ? `¡Listo! Guardamos ${newItems.length} ${newItems.length === 1 ? 'producto' : 'productos'} 🧺` : 'Compra guardada 🧾');
+    toast(newItems.length ? `¡Listo! Guardamos ${newItems.length} ${newItems.length === 1 ? 'producto' : 'productos'}` : 'Compra guardada');
   });
 }
 
@@ -744,7 +756,7 @@ function viewScan() {
     body.innerHTML = `
       <section class="scan-hero">
         <span class="pin" aria-hidden="true"></span>
-        <div class="ticket-art" aria-hidden="true"><b>🧾</b><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="ticket-art" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
         <span class="scan-line" aria-hidden="true"></span>
         <div class="cork-note">
           <h2>Tómale foto a tu ticket</h2>
@@ -756,9 +768,9 @@ function viewScan() {
         <label class="btn btn--ghost btn--block">${ico('image')} Elegir de la galería<input class="file-input" type="file" accept="image/*" data-file></label>
       </div>
       <ul class="tips">
-        <li><span>💡</span>Busca buena luz y evita sombras sobre el papel.</li>
-        <li><span>📏</span>Estira el ticket y que se vea completo y derecho.</li>
-        <li><span>✍️</span>¿Ticket borroso? También puedes <a class="link" href="#/compra/nueva">agregar a mano</a>.</li>
+        <li>${ico('bulb')}Busca buena luz y evita sombras sobre el papel.</li>
+        <li>${ico('ruler')}Estira el ticket y que se vea completo y derecho.</li>
+        <li>${ico('pencil')}¿Ticket borroso? También puedes <a class="link" href="#/compra/nueva">agregar a mano</a>.</li>
       </ul>`;
     body.querySelectorAll('[data-file]').forEach((inp) => inp.addEventListener('change', (e) => {
       const file = e.target.files?.[0];
@@ -799,23 +811,23 @@ function viewScan() {
       saveDraft();
       scanning = false;
       if (!still()) {
-        toast('Tu ticket está listo para revisar 🧾', { label: 'Ver', fn: () => go('#/compra/nueva') });
+        toast('Tu ticket está listo para revisar', { label: 'Ver', fn: () => go('#/compra/nueva') });
         return;
       }
       if (!parsed.items.length) {
-        body.innerHTML = emptyState('😕', 'No pudimos leer productos', 'Prueba con otra foto con más luz, o escríbelos a mano. Ya guardamos el texto que alcanzamos a leer.',
+        body.innerHTML = emptyState('sad', 'No pudimos leer productos', 'Prueba con otra foto con más luz, o escríbelos a mano. Ya guardamos el texto que alcanzamos a leer.',
           `<div class="stack"><button type="button" class="btn btn--primary btn--block" id="retry">${ico('camera')} Intentar otra vez</button><a class="btn btn--ghost btn--block" href="#/compra/nueva">${ico('pencil')} Escribirlos a mano</a></div>`);
         body.querySelector('#retry').addEventListener('click', showIntro);
         return;
       }
       go('#/compra/nueva');
-      toast(`Encontramos ${parsed.items.length} ${parsed.items.length === 1 ? 'producto' : 'productos'}. Revísalos ✨`);
+      toast(`Encontramos ${parsed.items.length} ${parsed.items.length === 1 ? 'producto' : 'productos'}. Revísalos`);
     } catch (err) {
       console.error(err);
       scanning = false;
       if (!still()) return;
       const offline = err?.message === 'offline' || !navigator.onLine;
-      body.innerHTML = emptyState(offline ? '📶' : '😕', offline ? 'Necesitas internet' : 'Algo salió mal',
+      body.innerHTML = emptyState(offline ? 'nosignal' : 'sad', offline ? 'Necesitas internet' : 'Algo salió mal',
         offline ? 'Para leer tickets necesitamos conexión la primera vez. Puedes agregar tu compra a mano mientras tanto.' : 'No pudimos leer la foto. Intenta con otra imagen.',
         `<div class="stack"><button type="button" class="btn btn--primary btn--block" id="retry">Intentar otra vez</button><a class="btn btn--ghost btn--block" href="#/compra/nueva">${ico('pencil')} Agregar a mano</a></div>`);
       body.querySelector('#retry').addEventListener('click', showIntro);
@@ -834,11 +846,11 @@ function viewItemEdit([id]) {
   document.body.classList.add('no-tabbar');
   const d = itemDays(i);
   const r = newRow(i.name, {
-    qty: i.qty, unit: i.unit, price: i.price ?? null, loc: i.loc, cat: i.cat, emoji: i.emoji,
+    qty: i.qty, unit: i.unit, price: i.price ?? null, loc: i.loc, cat: i.cat, icon: iconFor(i),
     mode: i.expiryType === 'exacta' ? 'fecha' : 'aprox', days: Math.max(1, d), date: i.expiresAt,
     open: true, pantry: true, touched: { cat: true, loc: true, days: true, pantry: true },
   });
-  r.emoji = i.emoji;
+  r.icon = iconFor(i);
   const opts = { price: true, single: true };
 
   view.innerHTML = `
@@ -856,16 +868,16 @@ function viewItemEdit([id]) {
   bindRows(view.querySelector('#rows'), [r], { getBase: todayISO, opts });
 
   view.querySelector('#save').addEventListener('click', () => {
-    if (!r.name.trim()) { toast('El producto necesita un nombre 🙂'); return; }
+    if (!r.name.trim()) { toast('El producto necesita un nombre'); return; }
     const exp = rowExpiresAt(r, todayISO());
     const changedExpiry = exp.expiresAt !== i.expiresAt;
     store.updateItem(i.id, {
-      name: r.name.trim(), emoji: r.emoji, qty: r.qty || 1, unit: r.unit, price: r.price,
+      name: r.name.trim(), icon: r.icon, qty: r.qty || 1, unit: r.unit, price: r.price,
       loc: r.loc, cat: r.cat, ...exp,
       ...(changedExpiry && diffDays(i.addedAt, exp.expiresAt) < 1 ? { addedAt: todayISO() } : {}),
     });
     go('#/inventario');
-    toast('Cambios guardados ✨');
+    toast('Cambios guardados');
   });
   view.querySelector('#del').addEventListener('click', () => {
     const res = store.removeItem(i.id, null);
@@ -892,18 +904,18 @@ function viewPurchases() {
     <header class="page-head"><h1>Mis compras</h1><p class="sub">El historial de todo lo que has traído a casa</p></header>
     ${ps.length ? `
       <section class="month-card">
-        <span class="month-card__emoji" aria-hidden="true">🧺</span>
+        <span class="month-card__emoji">${art('basket')}</span>
         <div><small>${monthLabel(thisMonth)} · ${monthPs.length} ${monthPs.length === 1 ? 'compra' : 'compras'}</small><b>${fmtMoney(monthTotal)}</b></div>
       </section>
       ${[...groups.entries()].map(([k, list]) => `
         <h3 class="group-label" style="margin-top:24px">${monthLabel(k)}</h3>
         <ul class="list">${list.map((p) => `<li><a class="purchase" href="#/compras/${p.id}">
-          <span class="purchase__icon" aria-hidden="true">${p.source === 'ticket' ? '🧾' : '✍️'}</span>
+          <span class="purchase__icon" aria-hidden="true">${art(p.source === 'ticket' ? 'ticket' : 'notepad')}</span>
           <span class="purchase__body"><b>${esc(p.store || (p.source === 'ticket' ? 'Compra con ticket' : 'Compra anotada'))}</b>
             <small>${fmtDate(p.date, { weekday: true })} · ${p.items.length} ${p.items.length === 1 ? 'producto' : 'productos'}</small></span>
           <span class="purchase__total">${p.total ? fmtMoney(p.total) : ''}</span>
         </a></li>`).join('')}</ul>`).join('')}`
-      : emptyState('🧾', 'Aún no hay compras', 'Cada vez que guardes una compra (con ticket o a mano) aparecerá aquí con su total.',
+      : emptyState('ticket', 'Aún no hay compras', 'Cada vez que guardes una compra (con ticket o a mano) aparecerá aquí con su total.',
         `<div class="stack"><a class="btn btn--primary btn--block" href="#/escanear">${ico('camera')} Escanear ticket</a><a class="btn btn--ghost btn--block" href="#/compra/nueva">${ico('pencil')} Agregar a mano</a></div>`)}`;
 }
 
@@ -914,11 +926,11 @@ function viewPurchase([id]) {
     <header class="page-head page-head--bar">
       <a href="#/compras" class="icon-btn" aria-label="Volver a compras">${ico('back')}</a>
       <div><h1>${esc(p.store || (p.source === 'ticket' ? 'Compra con ticket' : 'Compra anotada'))}</h1>
-      <p class="sub">${fmtDate(p.date, { weekday: true, year: true })} · ${p.source === 'ticket' ? 'desde ticket 🧾' : 'anotada a mano ✍️'}</p></div>
+      <p class="sub">${fmtDate(p.date, { weekday: true, year: true })} · ${p.source === 'ticket' ? 'desde ticket' : 'anotada a mano'}</p></div>
     </header>
     <section class="card receipt">
       ${p.items.map((it) => `<div class="receipt__row">
-        <span aria-hidden="true">${it.emoji || '🛒'}</span>
+        <span class="receipt__icon">${art(iconFor(it))}</span>
         <div><b>${esc(it.name)}</b><small>${esc(fmtQty(it))}${it.pantry === false ? ' · solo en la compra' : ''}</small></div>
         <span>${it.price ? fmtMoney(it.price) : ''}</span>
       </div>`).join('')}
@@ -956,7 +968,7 @@ function viewSettings() {
         <label class="field"><span>¿Cómo te llamamos?</span><input id="s-name" value="${esc(s.name)}" placeholder="Tu nombre" autocomplete="given-name" maxlength="30"></label>
         <div class="field"><span>Apariencia</span>
           <div class="seg seg--row" role="group">
-            ${[['auto', '🌗 Auto'], ['light', '☀️ Clara'], ['dark', '🌙 Oscura']].map(([v, l]) => `<button type="button" data-theme-opt="${v}" class="${s.theme === v ? 'on' : ''}">${l}</button>`).join('')}
+            ${[['auto', ico('auto') + ' Auto'], ['light', ico('sun') + ' Clara'], ['dark', ico('moon') + ' Oscura']].map(([v, l]) => `<button type="button" data-theme-opt="${v}" class="${s.theme === v ? 'on' : ''}">${l}</button>`).join('')}
           </div></div>
       </section>
       ${pct != null ? `<section class="card"><h2>Tu cocina en números</h2>
@@ -964,7 +976,7 @@ function viewSettings() {
           <div class="stat stat--sage"><small>Aprovechado</small><b>${pct}%</b><small>de lo que salió de tu cocina</small></div>
           <div class="stat"><small>Compras guardadas</small><b>${store.purchases.length}</b><small>en total</small></div>
         </div></section>` : ''}
-      ${installPrompt ? `<section class="card"><h2>Instalar la app</h2><p class="sub" style="margin:0">Tenla en tu pantalla de inicio como cualquier otra app.</p><button type="button" class="btn btn--primary btn--block" id="install">📲 Instalar Alacena</button></section>` : ''}
+      ${installPrompt ? `<section class="card"><h2>Instalar la app</h2><p class="sub" style="margin:0">Tenla en tu pantalla de inicio como cualquier otra app.</p><button type="button" class="btn btn--primary btn--block" id="install">${ico('download')} Instalar Alacena</button></section>` : ''}
       <section class="card">
         <h2>Tus datos</h2>
         <p class="sub" style="margin:0">Todo se guarda solo en este dispositivo. Haz un respaldo para pasarlo a otro teléfono.</p>
@@ -974,10 +986,10 @@ function viewSettings() {
         </div>
         <button type="button" class="btn btn--danger-text btn--block" id="reset">${ico('trash')} Borrar todos mis datos</button>
       </section>
-      <p class="about">Alacena · hecho con cariño para tu cocina 🧡<br>Las fechas aproximadas son una guía; confía también en tu olfato.</p>
+      <p class="about">Alacena · hecho con cariño para tu cocina<br>Las fechas aproximadas son una guía; confía también en tu olfato.</p>
     </div>`;
 
-  view.querySelector('#s-name').addEventListener('change', (e) => { store.setSettings({ name: e.target.value.trim() }); toast('¡Mucho gusto! 👋'); });
+  view.querySelector('#s-name').addEventListener('change', (e) => { store.setSettings({ name: e.target.value.trim() }); toast('¡Mucho gusto!'); });
   view.querySelectorAll('[data-theme-opt]').forEach((b) => b.addEventListener('click', () => {
     store.setSettings({ theme: b.dataset.themeOpt });
     applyTheme();
@@ -998,7 +1010,7 @@ function viewSettings() {
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-    toast('Respaldo descargado 💾');
+    toast('Respaldo descargado');
   });
   view.querySelector('#import').addEventListener('change', async (e) => {
     const file = e.target.files?.[0];
@@ -1008,7 +1020,7 @@ function viewSettings() {
       store.importJSON(await file.text());
       applyTheme();
       render();
-      toast('Datos restaurados ✨');
+      toast('Datos restaurados');
     } catch (err) {
       toast(err.message || 'No pudimos leer ese archivo');
     }
@@ -1019,7 +1031,7 @@ function viewSettings() {
     setDraft(null);
     applyTheme();
     go('#/');
-    toast('Empezamos de cero 🌱');
+    toast('Empezamos de cero');
   });
 }
 
@@ -1027,8 +1039,8 @@ function viewSettings() {
 document.getElementById('fab').addEventListener('click', () => {
   openSheet(`
     <h2 style="margin:0 4px 4px">¿Cómo quieres agregar tu compra?</h2>
-    <a class="sheet-option" href="#/escanear"><span aria-hidden="true">🧾</span><span><b>Escanear ticket</b><small>Toma una foto y nosotros lo leemos</small></span></a>
-    <a class="sheet-option" href="#/compra/nueva"><span aria-hidden="true">✍️</span><span><b>Agregar a mano</b><small>Escribe tus productos uno por uno</small></span></a>
+    <a class="sheet-option" href="#/escanear"><span>${art('ticket')}</span><span><b>Escanear ticket</b><small>Toma una foto y nosotros lo leemos</small></span></a>
+    <a class="sheet-option" href="#/compra/nueva"><span>${art('notepad')}</span><span><b>Agregar a mano</b><small>Escribe tus productos uno por uno</small></span></a>
   `);
 });
 

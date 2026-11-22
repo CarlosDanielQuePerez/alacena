@@ -39,8 +39,9 @@ index.html            Estructura de la app y barra de navegación
 css/styles.css        Estilos (paleta cálida, modo claro/oscuro, mobile-first)
 js/app.js             Pantallas, navegación y lógica de la interfaz
 js/store.js           Guardado local de productos, compras y ajustes
-js/foods.js           Catálogo de alimentos: emoji, categoría y días que duran
+js/foods.js           Catálogo de alimentos: ilustración, categoría y días que duran
 js/ticket.js          Lectura del ticket (OCR) e interpretación del texto
+js/icons.js           Ilustraciones propias de alimentos y objetos (SVG)
 js/utils.js           Fechas, formato de dinero y textos
 sw.js                 Service worker para funcionar sin conexión
 manifest.webmanifest  Datos para instalar la app
