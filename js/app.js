@@ -89,6 +89,7 @@ function openSheet(html, bind) {
   sheetRoot.innerHTML = `<div class="sheet-backdrop" data-close></div><div class="sheet" role="dialog" aria-modal="true"><div class="sheet__grip"></div>${html}</div>`;
   sheetRoot.querySelector('[data-close]').addEventListener('click', () => closeSheet());
   const sheet = sheetRoot.querySelector('.sheet');
+  [...sheet.children].forEach((el, n) => el.style.setProperty('--i', n));
   bind?.(sheet);
   requestAnimationFrame(() => requestAnimationFrame(() => sheetRoot.classList.add('open')));
 }
@@ -152,13 +153,76 @@ function render() {
     if (on) t.setAttribute('aria-current', 'page');
     else t.removeAttribute('aria-current');
   });
+  // Escalonado: cada objeto entra un poquito después del anterior
+  for (const sel of ['.vessel', '.furni', '.note', '.stat', '.list > li', '.settings > *', '.group-label', '.ghost', '.tips li']) {
+    view.querySelectorAll(sel).forEach((el, n) => el.style.setProperty('--i', n));
+  }
+
   if (path !== lastPath) {
     window.scrollTo(0, 0);
     view.style.animation = 'none';
     void view.offsetWidth;
     view.style.animation = '';
+    // Las animaciones de entrada solo corren al cambiar de pantalla, no al actualizar la misma
+    clearTimeout(enterTimer);
+    view.classList.remove('is-entering');
+    void view.offsetWidth;
+    view.classList.add('is-entering');
+    enterTimer = setTimeout(() => view.classList.remove('is-entering'), 1600);
+    countUp(view);
+    const tab = document.querySelector('.tab.active');
+    if (tab) { tab.classList.remove('pop'); void tab.offsetWidth; tab.classList.add('pop'); }
     lastPath = path;
   }
+}
+
+// ---------- Animaciones ----------
+let enterTimer = null;
+const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const wait = (ms) => new Promise((r) => setTimeout(r, reducedMotion() ? 0 : ms));
+
+// Los números (imanes del refri, post-its) cuentan desde cero
+function countUp(root) {
+  if (reducedMotion()) return;
+  root.querySelectorAll('[data-count]').forEach((el) => {
+    const end = Number(el.dataset.count);
+    if (!end) return;
+    const t0 = performance.now() + 350;
+    el.textContent = '0';
+    const step = (t) => {
+      const p = Math.min(1, Math.max(0, (t - t0) / 700));
+      el.textContent = Math.round(end * (1 - (1 - p) ** 3));
+      if (p < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  });
+}
+
+// Lluvia de hojitas al terminarse algo
+function burst(el) {
+  if (!el || reducedMotion()) return;
+  const r = el.getBoundingClientRect();
+  const b = document.createElement('div');
+  b.className = 'burst';
+  b.style.left = `${r.left + r.width / 2}px`;
+  b.style.top = `${r.top + r.height / 3}px`;
+  const colors = ['#88b06f', '#5f8b50', '#f5c95f', '#ef9a52', '#a9cc86'];
+  b.innerHTML = Array.from({ length: 14 }, (_, k) => {
+    const a = (Math.PI * 2 * k) / 14 + Math.random() * 0.4;
+    const d = 50 + Math.random() * 45;
+    return `<i style="--dx:${Math.cos(a) * d}px;--dy:${Math.sin(a) * d - 30}px;--r:${Math.random() * 360}deg;--c:${colors[k % colors.length]}"></i>`;
+  }).join('');
+  document.body.append(b);
+  setTimeout(() => b.remove(), 1000);
+}
+
+// Animación de salida de un producto de la repisa ('done' sube, 'waste' se cae)
+async function animateOut(id, kind) {
+  const el = view.querySelector(`.vessel[data-item="${id}"]`);
+  if (!el || reducedMotion()) return;
+  el.classList.add(`leaving--${kind}`);
+  if (kind === 'done') burst(el);
+  await wait(kind === 'done' ? 520 : 600);
 }
 
 const go = (hash) => {
@@ -169,7 +233,20 @@ const go = (hash) => {
 // Clic en cualquier producto abre su hoja
 view.addEventListener('click', (e) => {
   const b = e.target.closest('[data-item]');
-  if (b) openItemSheet(b.dataset.item);
+  if (b) {
+    b.classList.remove('tapped');
+    void b.offsetWidth;
+    b.classList.add('tapped');
+    openItemSheet(b.dataset.item);
+    return;
+  }
+  // Al tocar un mueble, se abre su puerta antes de entrar
+  const f = e.target.closest('.furni');
+  if (f && !reducedMotion() && !e.metaKey && !e.ctrlKey) {
+    e.preventDefault();
+    f.classList.add('opening');
+    setTimeout(() => go(f.getAttribute('href')), 340);
+  }
 });
 
 // ---------- Inicio ----------
@@ -178,7 +255,8 @@ function viewHome() {
   const items = store.items;
   const h = new Date().getHours();
   const greet = h < 5 ? 'Buenas noches' : h < 12 ? 'Buenos días' : h < 19 ? 'Buenas tardes' : 'Buenas noches';
-  const icon = ico(h < 7 || h >= 19 ? 'moon' : 'sun');
+  const night = h < 7 || h >= 19;
+  const icon = `<span class="greet-ico greet-ico--${night ? 'moon' : 'sun'}">${ico(night ? 'moon' : 'sun')}</span>`;
   const soon = sortByExpiry(items.filter((i) => itemDays(i) <= 3));
   const expiredCount = items.filter((i) => itemDays(i) < 0).length;
 
@@ -202,7 +280,8 @@ function viewHome() {
           aria-label="${l.long}: ${list.length} ${list.length === 1 ? 'producto' : 'productos'}${urgent ? `, ${urgent} por vencer` : ''}">
         <span class="furni__box" aria-hidden="true">
           <span class="furni__door"></span><span class="furni__door"></span>
-          <span class="furni__magnet">${list.length}</span>
+          <span class="furni__light"></span>
+          <span class="furni__magnet" data-count="${list.length}">${list.length}</span>
           ${urgent ? `<span class="furni__alert">${ico('clock')} ${urgent}</span>` : ''}
         </span>
         <span class="furni__label">${l.label}</span>
@@ -236,8 +315,8 @@ function viewHome() {
 
   const stats = used || wasted
     ? `<section class="stats" aria-label="Este mes">
-        <div class="stat stat--sage"><small>Este mes aprovechaste</small><b>${used}</b><small>${used === 1 ? 'producto' : 'productos'}</small></div>
-        <div class="stat stat--rose"><small>Se echaron a perder</small><b>${wasted}</b><small>${wasted === 0 ? '¡ninguno!' : wasted === 1 ? 'producto' : 'productos'}</small></div>
+        <div class="stat stat--sage"><small>Este mes aprovechaste</small><b data-count="${used}">${used}</b><small>${used === 1 ? 'producto' : 'productos'}</small></div>
+        <div class="stat stat--rose"><small>Se echaron a perder</small><b data-count="${wasted}">${wasted}</b><small>${wasted === 0 ? '¡ninguno!' : wasted === 1 ? 'producto' : 'productos'}</small></div>
       </section>`
     : '';
 
@@ -354,7 +433,7 @@ function openItemSheet(id) {
     <div class="grid2">${others.map((k) => `<button type="button" class="btn btn--ghost" data-move="${k}">${ico(LOCATIONS[k].icon)} ${LOCATIONS[k].label}</button>`).join('')}</div>
     <a class="btn btn--text btn--block" href="#/item/${i.id}">${ico('pencil')} Editar detalles</a>
   `, (sheet) => {
-    sheet.addEventListener('click', (e) => {
+    sheet.addEventListener('click', async (e) => {
       const act = e.target.closest('[data-act]')?.dataset.act;
       const move = e.target.closest('[data-move]')?.dataset.move;
       if (act === 'dec') {
@@ -363,6 +442,8 @@ function openItemSheet(id) {
         toast(`Listo, quedan ${fmtQty(i)}`);
       } else if (act === 'done' || act === 'waste') {
         const res = store.removeItem(i.id, act === 'done' ? 'consumido' : 'tirado');
+        closeSheet();
+        await animateOut(i.id, act);
         render();
         toast(act === 'done' ? '¡Bien aprovechado!' : 'Anotado. La próxima será mejor', { label: 'Deshacer', fn: () => { store.restore(res); render(); } });
       } else if (move) {
@@ -666,7 +747,8 @@ function viewDraft() {
       const d = draft;
       const idx = d.rows.indexOf(r);
       d.rows.splice(idx, 1);
-      li.remove();
+      li.classList.add('removing');
+      setTimeout(() => li.remove(), reducedMotion() ? 0 : 260);
       updateTotals();
       saveDraft();
       if (r.name.trim()) {
@@ -696,6 +778,7 @@ function viewDraft() {
     saveDraft();
     rowsEl.insertAdjacentHTML('beforeend', rowHTML(r, base(), opts));
     const input = rowsEl.querySelector(`[data-row="${r.id}"] [data-f="name"]`);
+    input.closest('.row').classList.add('is-new');
     input.focus();
     input.closest('.row').scrollIntoView({ block: 'center', behavior: 'smooth' });
   });
@@ -1036,7 +1119,13 @@ function viewSettings() {
 }
 
 // ---------- Botón + ----------
-document.getElementById('fab').addEventListener('click', () => {
+document.getElementById('fab').addEventListener('click', async (e) => {
+  // La tapa del frasco gira como si se abriera
+  const fab = e.currentTarget;
+  fab.classList.remove('twist');
+  void fab.offsetWidth;
+  fab.classList.add('twist');
+  await wait(160);
   openSheet(`
     <h2 style="margin:0 4px 4px">¿Cómo quieres agregar tu compra?</h2>
     <a class="sheet-option" href="#/escanear"><span>${art('ticket')}</span><span><b>Escanear ticket</b><small>Toma una foto y nosotros lo leemos</small></span></a>

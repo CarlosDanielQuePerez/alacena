@@ -973,3 +973,119 @@ body.no-tabbar #toast-root { bottom: calc(100px + env(safe-area-inset-bottom)); 
 .dot { display: inline-block; flex: none; width: 11px; height: 11px; border-radius: 50%; background: var(--sage); box-shadow: inset 0 0 0 2px rgb(0 0 0 / 0.12); }
 .dot--pronto { background: var(--mustard); }
 .dot--vencido { background: var(--brick); }
+
+/* ============================================================
+   Animaciones. Las de entrada solo corren al cambiar de pantalla
+   (.view.is-entering); con "reducir movimiento" se apagan todas.
+   ============================================================ */
+@keyframes swingIn { 0% { transform: rotate(-10deg) translateY(-24px); opacity: 0; } 40% { transform: rotate(4deg); opacity: 1; } 65% { transform: rotate(-2.5deg); } 85% { transform: rotate(0.8deg); } 100% { transform: rotate(-0.6deg); } }
+@keyframes dropIn { 0% { transform: translateY(-70px); opacity: 0; } 55% { transform: translateY(0) scale(1.06, 0.92); opacity: 1; } 75% { transform: translateY(-5px) scale(0.98, 1.03); } 100% { transform: none; } }
+@keyframes rise { from { transform: translateY(26px); opacity: 0; } }
+@keyframes stick { 0% { transform: scale(1.25) rotate(-9deg); opacity: 0; } 70% { opacity: 1; } }
+@keyframes tapeIn { from { opacity: 0; transform: rotate(-4deg) scaleX(0.1); } }
+@keyframes magnet { 0% { transform: scale(0) rotate(-60deg); } 70% { transform: scale(1.2) rotate(4deg); } }
+@keyframes tagSwing { 0% { transform: rotate(-24deg); opacity: 0; } 55% { transform: rotate(5deg); opacity: 1; } 80% { transform: rotate(-4deg); } 100% { transform: rotate(-2deg); } }
+@keyframes printIn { from { clip-path: inset(0 0 100% 0); transform: translateY(-14px); } to { clip-path: inset(0 0 0 0); } }
+@keyframes fillUp { from { height: 0; } }
+@keyframes wave { to { background-position: 14px 0; } }
+@keyframes wobble { 0%, 86%, 100% { transform: rotate(-4deg); } 90% { transform: rotate(-9deg); } 94% { transform: rotate(-1deg); } 97% { transform: rotate(-5deg); } }
+@keyframes jiggle { 0% { transform: none; } 25% { transform: rotate(-7deg) scale(1.04); } 50% { transform: rotate(5deg); } 75% { transform: rotate(-2deg); } 100% { transform: none; } }
+@keyframes leaveUp { 0% { transform: none; } 30% { transform: translateY(8px) scale(1.08, 0.9); } 100% { transform: translateY(-90px) scale(0.5); opacity: 0; } }
+@keyframes tipOver { 0% { transform: none; } 35% { transform: rotate(18deg); } 100% { transform: translate(40px, 30px) rotate(95deg); opacity: 0; } }
+@keyframes burst { to { transform: translate(var(--dx), var(--dy)) rotate(var(--r)); opacity: 0; } }
+@keyframes curtain { 0% { transform: scaleY(0.15); } 45% { transform: scaleY(1.1); } 65% { transform: scaleY(0.96); } 100% { transform: none; } }
+@keyframes bob { 50% { transform: translateY(-5px) rotate(3deg); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes ghost { 50% { opacity: 0.4; } }
+@keyframes sway { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(-1deg); } }
+@keyframes pinDrop { from { transform: translateY(-34px) scale(1.5); opacity: 0; } }
+@keyframes pop { 0% { transform: scale(0.6); } 60% { transform: scale(1.15); } }
+@keyframes twist { 0% { transform: translateY(-20px); } 50% { transform: translateY(-27px) rotate(-120deg) scale(1.06); } 100% { transform: translateY(-20px) rotate(-180deg); } }
+@keyframes stripes { to { background-position: 32px 0, 0 0; } }
+@keyframes fadeSlide { to { opacity: 0; transform: translateX(-40px); } }
+@keyframes fillWidth { from { width: 0; } }
+
+/* Cortinita y pizarrón */
+.valance { transform-origin: top; animation: curtain 1.1s cubic-bezier(0.3, 0.7, 0.4, 1) both; }
+.is-entering .hero, .is-entering .page-head, .is-entering .month-card { transform-origin: 50% -40px; animation: swingIn 1s cubic-bezier(0.3, 0.7, 0.4, 1) backwards; }
+.greet-ico--sun .ico { animation: spin 16s linear infinite; }
+.greet-ico--moon .ico { animation: bob 4s ease-in-out infinite; }
+
+/* Muebles: suben, el imán se pega y la puerta se abre al tocar */
+.is-entering .furni { animation: rise 0.55s cubic-bezier(0.3, 1.4, 0.5, 1) backwards; animation-delay: calc(var(--i, 0) * 90ms + 120ms); }
+.is-entering .furni__magnet { animation: magnet 0.55s cubic-bezier(0.3, 1.6, 0.5, 1) backwards; animation-delay: calc(var(--i, 0) * 90ms + 480ms); }
+.furni__box { perspective: 260px; }
+.furni__door { transform-origin: left center; transition: transform 0.32s cubic-bezier(0.4, 0, 0.3, 1); z-index: 1; }
+.furni__magnet, .furni__alert { z-index: 2; }
+.furni.opening .furni__door { transform: rotateY(-72deg); }
+.furni--alacena .furni__door + .furni__door { transform-origin: right center; }
+.furni--alacena.opening .furni__door + .furni__door { transform: rotateY(72deg); }
+.furni--congelador .furni__door { transform-origin: center bottom; }
+.furni--congelador.opening .furni__door { transform: rotateX(-35deg) translateY(4px); }
+.furni__light { position: absolute; inset: 6px; z-index: 0; border-radius: 10px; opacity: 0; background: radial-gradient(circle at 50% 30%, #fff8d8, #ffe7a6 60%, rgb(255 220 140 / 0.4)); transition: opacity 0.25s ease; }
+.furni.opening .furni__light { opacity: 1; }
+.furni.opening .furni__magnet { transition: opacity 0.15s; opacity: 0; }
+
+/* Repisas: los frascos caen y rebotan, el contenido sube como líquido */
+.is-entering .vessel { animation: dropIn 0.65s cubic-bezier(0.3, 0.7, 0.4, 1) backwards; animation-delay: calc(var(--i, 0) * 55ms + 160ms); }
+.is-entering .vessel__fill { animation: fillUp 1.1s cubic-bezier(0.3, 0.7, 0.4, 1) backwards; animation-delay: calc(var(--i, 0) * 55ms + 520ms); }
+.vessel--jar .vessel__fill::before, .vessel--bottle .vessel__fill::before {
+  content: ''; position: absolute; left: 0; right: 0; top: -8px; height: 7px;
+  background: radial-gradient(8px 5px at 7px 7px, var(--stbg) 98%, transparent) 0 0 / 14px 7px repeat-x;
+  animation: wave 2.6s linear infinite;
+}
+.vessel.is-vencido { animation: wobble 5s ease-in-out infinite; }
+.is-entering .vessel.is-vencido { animation: dropIn 0.65s cubic-bezier(0.3, 0.7, 0.4, 1) backwards; animation-delay: calc(var(--i, 0) * 55ms + 160ms); }
+.vessel.tapped { animation: jiggle 0.4s ease; }
+.vessel.leaving--done { animation: leaveUp 0.55s cubic-bezier(0.5, 0, 0.7, 0.4) forwards !important; }
+.vessel.leaving--waste { animation: tipOver 0.6s cubic-bezier(0.5, 0, 0.8, 0.5) forwards !important; transform-origin: 85% 100%; }
+.is-entering .group-label { transform-origin: 6px 50%; animation: tagSwing 0.8s cubic-bezier(0.3, 0.7, 0.4, 1) backwards; animation-delay: calc(var(--i, 0) * 120ms + 80ms); }
+.ghost { animation: ghost 2.4s ease-in-out infinite; animation-delay: calc(var(--i, 0) * 0.3s); }
+
+/* Lluvia de hojitas */
+.burst { position: fixed; z-index: 70; width: 0; height: 0; pointer-events: none; }
+.burst i { position: absolute; left: -5px; top: -5px; width: 11px; height: 11px; border-radius: 60% 0; background: var(--c); animation: burst 0.85s cubic-bezier(0.2, 0.7, 0.4, 1) forwards; }
+
+/* Notas, post-its, tarjetas y tickets */
+.is-entering .note { animation: stick 0.6s cubic-bezier(0.3, 1.4, 0.5, 1) backwards; animation-delay: calc(var(--i, 0) * 130ms + 320ms); }
+.is-entering .note .tape { animation: tapeIn 0.35s ease-out backwards; animation-delay: calc(var(--i, 0) * 130ms + 700ms); }
+.is-entering .stat { animation: stick 0.6s cubic-bezier(0.3, 1.4, 0.5, 1) backwards; animation-delay: calc(var(--i, 0) * 130ms + 520ms); }
+.is-entering .welcome, .is-entering .empty, .is-entering .form-card, .is-entering .scan-hero, .is-entering .receipt { animation: stick 0.6s cubic-bezier(0.3, 1.4, 0.5, 1) 0.2s backwards; }
+.is-entering .settings > * { animation: stick 0.55s cubic-bezier(0.3, 1.4, 0.5, 1) backwards; animation-delay: calc(var(--i, 0) * 110ms + 200ms); }
+.is-entering .list > li { animation: printIn 0.6s cubic-bezier(0.3, 0.7, 0.4, 1) backwards; animation-delay: calc(var(--i, 0) * 80ms + 250ms); }
+.is-entering .tips li { animation: rise 0.45s cubic-bezier(0.3, 1.4, 0.5, 1) backwards; animation-delay: calc(var(--i, 0) * 90ms + 450ms); }
+.is-entering .banner { animation: tagSwing 0.8s cubic-bezier(0.3, 0.7, 0.4, 1) 0.4s backwards; transform-origin: 10px 50%; }
+.is-entering .scan-actions, .is-entering .search, .is-entering .filters { animation: rise 0.45s ease 0.2s backwards; }
+.empty__art .fi, .welcome__art .fi { animation: bob 3s ease-in-out infinite; }
+.welcome__art .fi:nth-child(2) { animation-delay: 0.4s; }
+.welcome__art .fi:nth-child(3) { animation-delay: 0.8s; }
+.note__icon .fi { transition: transform 0.25s cubic-bezier(0.3, 1.6, 0.5, 1); }
+.note:hover .note__icon .fi { transform: rotate(-8deg) scale(1.08); }
+
+/* Escáner: chincheta, ticket que se mece y barra con rayitas */
+.ticket-art { transform-origin: 50% 0; animation: sway 4s ease-in-out infinite; }
+.is-entering .pin { animation: pinDrop 0.45s cubic-bezier(0.3, 1.6, 0.5, 1) 0.35s backwards; }
+.progress span { background-position: 0 0, 0 0; animation: stripes 1s linear infinite; }
+
+/* Editor: filas nuevas suben, las quitadas se deslizan */
+.row.is-new { animation: rise 0.4s cubic-bezier(0.3, 1.4, 0.5, 1); }
+.row.removing { animation: fadeSlide 0.26s ease-in forwards; pointer-events: none; }
+.seg button.on { animation: pop 0.32s cubic-bezier(0.3, 1.6, 0.5, 1); }
+
+/* Barra inferior y botón tapa de frasco */
+.tab.pop .ico { animation: pop 0.42s cubic-bezier(0.3, 1.8, 0.5, 1); }
+.fab.twist { animation: twist 0.42s cubic-bezier(0.4, 0, 0.3, 1); }
+
+/* Hoja inferior: su contenido entra escalonado */
+.sheet > * { animation: rise 0.4s cubic-bezier(0.3, 1.3, 0.5, 1) backwards; animation-delay: calc(var(--i, 0) * 45ms + 120ms); }
+.sheet::before { animation: none; }
+.sheet .big-emoji .fi { animation: magnet 0.6s cubic-bezier(0.3, 1.6, 0.5, 1) 0.2s backwards; }
+.sheet .fresh > span { animation: fillWidth 0.9s cubic-bezier(0.3, 0.7, 0.4, 1) 0.35s backwards; }
+
+/* Avisos: el pizarroncito entra con rebote */
+.toast { transform: translateY(30px) rotate(-7deg); transition: opacity 0.22s ease, transform 0.45s cubic-bezier(0.3, 1.6, 0.5, 1); }
+.toast.show { transform: rotate(-1deg); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
